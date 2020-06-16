@@ -2,12 +2,19 @@
 
 import sys
 
+#CPU class - def load - load a program into memory
+#Load - address = 0  ---> program counter, index of the current instruction
+#     - program = array of bytes ---> MEMORY , RAM  -->   inside there's instructions
+
+
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        register = [0] * 8  #8 general-purpose register
+        memory = [0] * 256 #256 bytes of memory
+        pc = 0  #internal register
 
     def load(self):
         """Load a program into memory."""
@@ -63,3 +70,8 @@ class CPU:
     def run(self):
         """Run the CPU."""
         pass
+
+    def ram_read(address):
+        #accepts address to read and returns the value stored there
+        value = self.register[address]
+        return value
