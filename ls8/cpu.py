@@ -8,6 +8,12 @@ filename = sys.argv[1]
 #Load - address = 0  ---> program counter, index of the current instruction
 #     - program = array of bytes ---> MEMORY , RAM  -->   inside there's instructions
 
+LDI = 0b10000010   #reg[0] = 8
+PRN = 0b01000111   #print(reg[0])
+MUL = 0b10100010
+PUSH = 
+POP =  
+HLT = 0b00000001
 
 class CPU:
     """Main CPU class."""
@@ -17,6 +23,15 @@ class CPU:
         self.register = [0] * 8  #8 general-purpose register
         self.ram = [0] * 256 #256 bytes of memory
         self.pc = 0  #internal register
+        self.branchtable = {}
+        #load functions into branchtable
+        self.branchtable[LDI] = self.LDI
+        self.branchtable[PRN] = self.PRN
+        self.branchtable[MUL] = self.MUL
+        self.branchtable[PUSH] = self.PUSH
+        self.branchtable[POP] = self.POP
+        self.branchtable[HLT] = self.HLT
+
 
     
     def load(self):
@@ -92,12 +107,60 @@ class CPU:
     def ram_write(self, value, address):
         self.ram[address] = value
 
+
+    def LDI(self): #0b10000010
+        reg_num = self.ram_read(self.pc+1)
+        value = self.ram_read(self.pc+2)
+        self.register[reg_num] = value
+        self.pc += 3 #3byte instruction
+
+    def PRN(self):
+        reg_num = self.ram_read(self.pc+1)
+        print(self.register[reg_num])
+        self.pc += 2 #2byte instruction
+
+    def MUL(self):
+        reg_num1 = self.ram[self.pc+1]
+        reg_num2 = self.ram[self.pc+2]
+        self.register[reg_num1] *= self.register[reg_num2]
+        self.pc += 3
+
+    def PUSH(self):
+        #initialize R7
+        SP = 7
+        self.register[SP] = 0xF4
+
+    def POP(self):
+        pass
+
+
+    def HLT(self):
+        running = False
+        self.pc += 1
+
     def run(self):
+        running = True
+        
+        while running:
+            ir = self.ram_read(self.pc)
+
+            if  ir in self.branchtable:
+                self.branchtable[ir]()
+            else:
+                print((f'Unknown instruction: {IR}, at address PC: {self.pc}'))
+                sys.exit(1)  
+             
+
+    ''' def run(self):
         """Run the CPU."""
         LDI = 0b10000010   #reg[0] = 8
         PRN = 0b01000111   #print(reg[0])
         MUL = 0b10100010 
         HLT = 0b00000001
+
+        #initialize R7
+        SP = 7
+        register[SP] = 0xF4
 
         #self.pc --> index of current instruction
         #ir --> instruction register, the instruction at index pc
@@ -125,11 +188,16 @@ class CPU:
                 self.register[reg_num1] *= self.register[reg_num2]
                 self.pc += 3
 
+            elif ir == PUSH:
+                
+
             elif ir == HLT:
                 running = False
                 self.pc += 1
 
             else:
                 print(f'Unknown instruction {ir} at address {self.pc}')
-                sys.exit(1)
-    
+                sys.exit(1) '''
+
+
+        
