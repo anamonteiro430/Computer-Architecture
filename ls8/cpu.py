@@ -2,6 +2,8 @@
 
 import sys
 
+filename = sys.argv[1]
+
 #CPU class - def load - load a program into memory
 #Load - address = 0  ---> program counter, index of the current instruction
 #     - program = array of bytes ---> MEMORY , RAM  -->   inside there's instructions
@@ -19,12 +21,25 @@ class CPU:
     
     def load(self):
         """Load a program into memory."""
+        #Load program from examples - print8.ls8
+        #no longer hardcoded!
+        with open(filename) as f:
+            address = 0
+            for line in f:
+                line = line.split("#")
+                try:
+                    value = int(line[0], 2)
+                    self.ram_write(value, address)
+                    address += 1
+                except ValueError:
+                    continue
+                print(value)
+        print("RAM", self.ram[:15])
 
-        address = 0
 
         # For now, we've just hardcoded a program:
 
-        program = [
+        ''' program = [
             # From print8.ls8
             0b10000010,  # LDI in R0 save 8  
             0b00000000,  #R0                 
@@ -36,7 +51,7 @@ class CPU:
 
         for instruction in program:
             self.ram[address] = instruction
-            address += 1
+            address += 1 '''
 
 
     def alu(self, op, reg_a, reg_b):
@@ -72,7 +87,6 @@ class CPU:
 
     def ram_read(self, address):
         value = self.ram[address]
-        print(value)
         return value
 
     def ram_write(self, value, address):
@@ -82,6 +96,7 @@ class CPU:
         """Run the CPU."""
         LDI = 0b10000010   #reg[0] = 8
         PRN = 0b01000111   #print(reg[0])
+        MUL = 0b10100010 
         HLT = 0b00000001
 
         #self.pc --> index of current instruction
@@ -93,15 +108,22 @@ class CPU:
             ir = self.ram[self.pc]
 
             if ir == LDI:
-                reg_num = self.ram[self.pc+1]
-                value = self.ram[self.pc+2]
+                reg_num = self.ram_read(self.pc+1)
+                value = self.ram_read(self.pc+2)
                 self.register[reg_num] = value
                 self.pc += 3 #3byte instruction
 
             elif ir == PRN:
-                reg_num = self.ram[self.pc+1]
+                reg_num = self.ram_read(self.pc+1)
                 print(self.register[reg_num])
                 self.pc += 2 #2byte instruction
+
+            elif ir == MUL:
+                
+                reg_num1 = self.ram[self.pc+1]
+                reg_num2 = self.ram[self.pc+2]
+                self.register[reg_num1] *= self.register[reg_num2]
+                self.pc += 3
 
             elif ir == HLT:
                 running = False
