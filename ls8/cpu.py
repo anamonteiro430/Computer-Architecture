@@ -12,10 +12,11 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        register = [0] * 8  #8 general-purpose register
-        memory = [0] * 256 #256 bytes of memory
-        pc = 0  #internal register
+        self.register = [0] * 8  #8 general-purpose register
+        self.ram = [0] * 256 #256 bytes of memory
+        self.pc = 0  #internal register
 
+    
     def load(self):
         """Load a program into memory."""
 
@@ -25,12 +26,12 @@ class CPU:
 
         program = [
             # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
+            0b10000010,  # LDI in R0 save 8  
+            0b00000000,  #R0                 
+            0b00001000,  #8
+            0b01000111,  # PRN R0
+            0b00000000,  #R0
+            0b00000001,  # HLT
         ]
 
         for instruction in program:
@@ -67,11 +68,46 @@ class CPU:
 
         print()
 
+
+
+    def ram_read(self, address):
+        value = self.ram[address]
+        print(value)
+        return value
+
+    def ram_write(self, value, address):
+        self.ram[address] = value
+
     def run(self):
         """Run the CPU."""
-        pass
+        LDI = 0b10000010   #reg[0] = 8
+        PRN = 0b01000111   #print(reg[0])
+        HLT = 0b00000001
 
-    def ram_read(address):
-        #accepts address to read and returns the value stored there
-        value = self.register[address]
-        return value
+        #self.pc --> index of current instruction
+        #ir --> instruction register, the instruction at index pc
+
+        running = True
+
+        while running:
+            ir = self.ram[self.pc]
+
+            if ir == LDI:
+                reg_num = self.ram[self.pc+1]
+                value = self.ram[self.pc+2]
+                self.register[reg_num] = value
+                self.pc += 3 #3byte instruction
+
+            elif ir == PRN:
+                reg_num = self.ram[self.pc+1]
+                print(self.register[reg_num])
+                self.pc += 2 #2byte instruction
+
+            elif ir == HLT:
+                running = False
+                self.pc += 1
+
+            else:
+                print(f'Unknown instruction {ir} at address {self.pc}')
+                sys.exit(1)
+    
