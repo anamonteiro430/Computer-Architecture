@@ -11,10 +11,11 @@ filename = sys.argv[1]
 LDI = 0b10000010   #reg[0] = 8
 PRN = 0b01000111   #print(reg[0])
 MUL = 0b10100010
-PUSH = 
-POP =  
+PUSH = 0b01000101
+POP = 0b01000110
 HLT = 0b00000001
 
+SP = 7
 class CPU:
     """Main CPU class."""
 
@@ -23,6 +24,8 @@ class CPU:
         self.register = [0] * 8  #8 general-purpose register
         self.ram = [0] * 256 #256 bytes of memory
         self.pc = 0  #internal register
+        self.SP = 7
+        self.register[SP] = 0xF4
         self.branchtable = {}
         #load functions into branchtable
         self.branchtable[LDI] = self.LDI
@@ -48,7 +51,6 @@ class CPU:
                     address += 1
                 except ValueError:
                     continue
-                print(value)
         print("RAM", self.ram[:15])
 
 
@@ -116,7 +118,7 @@ class CPU:
 
     def PRN(self):
         reg_num = self.ram_read(self.pc+1)
-        print(self.register[reg_num])
+        print("PRINTING", self.register[reg_num])
         self.pc += 2 #2byte instruction
 
     def MUL(self):
@@ -125,18 +127,40 @@ class CPU:
         self.register[reg_num1] *= self.register[reg_num2]
         self.pc += 3
 
-    def PUSH(self):
-        #initialize R7
-        SP = 7
-        self.register[SP] = 0xF4
+    def PUSH(self): #Push the value in the given register on the stack.
+        #decrement sp
+        self.register[self.SP] -= 1
+        #get the value we want to store from the register 
+        reg_num = self.ram[self.pc + 1]
+        #value is in register ith that number
+        value = self.register[reg_num]
+        #register 7 points to that address
+        top_address = self.register[self.SP]
+        #find it in ram and store the value there
+        self.ram[top_address] = value
+        #increment pc to next instruction
+        self.pc += 2
 
     def POP(self):
-        pass
+        #find out the address of top of stack -- register[SP] points to ir
+        top_address = self.register[self.SP]
+        #the value is the number in ram at that address
+        value = self.ram[top_address]
+        #what's the register in the instruction
+        reg_num = self.ram[self.pc + 1]
+        #put the value in that register
+        self.register[reg_num] = value
+        #increment sp
+        self.register[SP] += 1
+        #increment pc to next instruction
+        self.pc += 2
 
 
     def HLT(self):
+        print("RAM is ", self.ram[:35])
         running = False
-        self.pc += 1
+        sys.exit(0)
+        
 
     def run(self):
         running = True
@@ -146,9 +170,11 @@ class CPU:
 
             if  ir in self.branchtable:
                 self.branchtable[ir]()
+                
             else:
-                print((f'Unknown instruction: {IR}, at address PC: {self.pc}'))
+                print((f'Unknown instruction: {ir}, at address PC: {self.pc}'))
                 sys.exit(1)  
+        
              
 
     ''' def run(self):
