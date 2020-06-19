@@ -96,14 +96,18 @@ class CPU:
         elif op == CMP:
             print("in ALU")
             if self.register[reg_a] == self.register[reg_b]:
+                print("EqUAL", self.register[reg_a], self.register[reg_b])
                 #set the Equal `E` flag to 1
-                print("FLAG REG", self.FL)
                 self.FL[-1] = 1
+                print("FLAG REG", self.FL)
             elif self.register[reg_a] < self.register[reg_b]:
+                print(self.register[reg_a],"LESS THAN",self.register[reg_b])
                 self.FL[-3] = 1
+                print("FLAG REG", self.FL)
             elif self.register[reg_a] > self.register[reg_b]:
+                print(self.register[reg_a],"GREATER THAN",self.register[reg_b])
                 self.FL[-2] = 1
-            
+                print("FLAG REG", self.FL)            
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -138,12 +142,12 @@ class CPU:
 
 
     def LDI(self): #0b10000010
-        print("LOAD")
+        print("LDI")
         reg_num = self.ram_read(self.pc+1)
         value = self.ram_read(self.pc+2)
         self.register[reg_num] = value
         self.pc += 3 #3byte instruction
-        print(self.register)
+        print("registers" ,self.register)
 
     def PRN(self):
         reg_num = self.ram_read(self.pc+1)
@@ -151,7 +155,6 @@ class CPU:
         self.pc += 2 #2byte instruction
 
     def ADD(self):
-        print("add")
         reg_num1 = self.ram[self.pc+1]
         reg_num2 = self.ram[self.pc+2]
         self.register[reg_num1] += self.register[reg_num2]
@@ -194,73 +197,84 @@ class CPU:
     def CALL(self): #contains a register operand
         #that register contains the address we want to jump to, address of a function
         #since CALL instruction takes two bytes to execute we want to access self.ram(pc + 2)
-        print("calling")
-        print("RAM", self.ram)
-        print("REG,,", self.register)
         return_address = self.pc+2 #we're going to return here after
         #push it to the stack
         #decrement SP
-        print("return address", return_address)
         self.register[self.SP] -= 1
         #check what's the top address:
         top_address = self.register[self.SP]
-        print("top address", top_address)
         #find it in RAM and store the return_address there
         self.ram[top_address] = return_address
-        print("RAM", self.ram)
         #get the register number from pc+1
         reg_num = self.ram[self.pc+1]
-        print("reg number is", reg_num)
         #the address it's whatever is stored in that register number
         subroutine_address = self.register[reg_num]
-        print("sub addr", subroutine_address)
         #call it
         self.pc = subroutine_address
-        print("pc is", self.pc)
 
     def RET(self):
         #get the value from top of stack
-        print("RET")
         top_address = self.register[self.SP]
-        print("TOP", top_address)
         value = self.ram[top_address]
         self.pc = value
 
     def CMP(self): #takes 2 operands
         #compare the values in the two registers
+        print("CMP")
         reg_num1 = self.ram[self.pc+1]
         reg_num2 = self.ram[self.pc+2]
         self.alu(CMP, reg_num1, reg_num2)
         self.pc += 3
 
-
     def JEQ(self): #one operand
         #if the `equal` flag is set to TRUE (1), jump to the address stored in the given register
-        reg_num = self.ram[self.pc+1]
-        print("regnum, ", reg_num)
-        address = self.register[reg_num]
-        print("address", reg_num)
-        print("self.pc is before", self.pc )
-        self.pc += 2
-        print("self.pc is now", self.pc )
+        if self.FL[-1] == 1:
+            print("JEqq")
+            reg_num = self.ram[self.pc+1]
+            print("regnum, ", reg_num)
+            address = self.register[reg_num]
+            print("address in", reg_num, "is----", address)
+            print("self.pc is before", self.pc )
+            self.pc = address
+            print("self.pc is now", self.pc )
+        else:
+            print("NOT JEQ")
+            print("self.pc is before", self.pc )
+            self.pc += 2
+            print("self.pc is now", self.pc )
         
 
     def JNE(self):
         #if the `equal` flag is set to False (0), jump to the address stored in the given register
-        reg_num = self.ram[self.pc+1]
-        print("regnum, ", reg_num)
-        address = self.register[reg_num]
-        self.pc += 2
+        #self.FL = [0,0,0,0,0,"L","G","E"]
+        if self.FL[-1] == 0:
+            print("JNE")
+            reg_num = self.ram[self.pc+1]
+            print("regnum, ", reg_num)
+            address = self.register[reg_num]
+            print("address in", reg_num, "is----", address)
+            print("self.pc is before", self.pc )
+            self.pc = address
+            print("self.pc is now", self.pc )
+        else:
+            print("NOT JNE")
+            print("self.pc is before", self.pc )
+            self.pc += 2
+            print("self.pc is now", self.pc )
 
 
 
-    def JMP(self):         
+    def JMP(self):  
+        print("JMP")       
         #jump to the address stored in the given register
         reg_num = self.ram[self.pc+1]
         print("regnum, ", reg_num)
         address = self.register[reg_num]
+        print("address in", reg_num, "is----", address)
         #set pc to the address stored in the register
+        print("self.pc is before", self.pc )
         self.pc = address
+        print("self.pc is now", self.pc )
 
 
     def HLT(self):
