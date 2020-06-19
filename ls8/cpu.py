@@ -16,6 +16,10 @@ PUSH = 0b01000101
 POP = 0b01000110
 CALL = 0b01010000
 RET = 0b00010001
+CMP = 0b10100111
+JEQ = 0b01010101
+JNE = 0b01010110
+JMP = 0b01010100
 HLT = 0b00000001
 
 SP = 7
@@ -27,6 +31,7 @@ class CPU:
         self.register = [0] * 8  #8 general-purpose register
         self.ram = [0] * 256 #256 bytes of memory
         self.pc = 0  #internal register
+        self.FL = [0,0,0,0,0,0,0,0] #special purpose register
         self.SP = 7
         self.register[SP] = 0xF4
         self.branchtable = {}
@@ -39,6 +44,10 @@ class CPU:
         self.branchtable[POP] = self.POP
         self.branchtable[CALL] = self.CALL
         self.branchtable[RET] = self.RET
+        self.branchtable[CMP] = self.CMP
+        self.branchtable[JEQ] = self.JEQ
+        self.branchtable[JNE] = self.JNE
+        self.branchtable[JMP] = self.JMP
         self.branchtable[HLT] = self.HLT
 
 
@@ -79,10 +88,22 @@ class CPU:
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
-
+        #self.FL = [0,0,0,0,0,"L","G","E"]
+        #self.FL = [0,0,0,0,0,0,0,0]
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         #elif op == "SUB": etc
+        elif op == CMP:
+            print("in ALU")
+            if self.register[reg_a] == self.register[reg_b]:
+                #set the Equal `E` flag to 1
+                print("FLAG REG", self.FL)
+                self.FL[-1] = 1
+            elif self.register[reg_a] < self.register[reg_b]:
+                self.FL[-3] = 1
+            elif self.register[reg_a] > self.register[reg_b]:
+                self.FL[-2] = 1
+            
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -205,6 +226,43 @@ class CPU:
         value = self.ram[top_address]
         self.pc = value
 
+    def CMP(self): #takes 2 operands
+        #compare the values in the two registers
+        reg_num1 = self.ram[self.pc+1]
+        reg_num2 = self.ram[self.pc+2]
+        self.alu(CMP, reg_num1, reg_num2)
+        self.pc += 3
+
+
+    def JEQ(self): #one operand
+        #if the `equal` flag is set to TRUE (1), jump to the address stored in the given register
+        reg_num = self.ram[self.pc+1]
+        print("regnum, ", reg_num)
+        address = self.register[reg_num]
+        print("address", reg_num)
+        print("self.pc is before", self.pc )
+        self.pc += 2
+        print("self.pc is now", self.pc )
+        
+
+    def JNE(self):
+        #if the `equal` flag is set to False (0), jump to the address stored in the given register
+        reg_num = self.ram[self.pc+1]
+        print("regnum, ", reg_num)
+        address = self.register[reg_num]
+        self.pc += 2
+
+
+
+    def JMP(self):         
+        #jump to the address stored in the given register
+        reg_num = self.ram[self.pc+1]
+        print("regnum, ", reg_num)
+        address = self.register[reg_num]
+        #set pc to the address stored in the register
+        self.pc = address
+
+
     def HLT(self):
         print("RAM is ", self.ram[:35])
         running = False
@@ -216,7 +274,7 @@ class CPU:
         
         while running:
             ir = self.ram_read(self.pc)
-
+            print("IR is,", ir)
             if  ir in self.branchtable:
                 self.branchtable[ir]()
                 
